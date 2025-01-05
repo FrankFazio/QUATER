@@ -7,7 +7,9 @@ let board = Array.from({ length: numRows }, () => Array(numCols).fill(null));
 let timer, timeLeft = 60;
 let gameBoard = document.getElementById("game-board");
 let currentPlayerDisplay = document.getElementById("current-player");
-let timerDisplay = document.getElementById("time-left");
+let timerDisplayTop = document.getElementById("time-left-top");
+let timerDisplayBottom = document.getElementById("time-left-bottom");
+let drawMessage = document.getElementById("draw-message");
 
 function createBoard() {
     for (let row = 0; row < numRows; row++) {
@@ -33,6 +35,9 @@ function makeMove(e) {
         if (checkWin()) {
             alert(`Giocatore ${currentPlayer} ha vinto!`);
             resetGame();
+        } else if (checkDraw()) {
+            displayDrawMessage();
+            setTimeout(resetGame, 5000);
         } else {
             switchPlayer();
             startTimer();
@@ -47,13 +52,17 @@ function switchPlayer() {
 
 function startTimer() {
     timeLeft = 60;
-    timerDisplay.textContent = timeLeft;
-    timerDisplay.classList.remove("blink");
+    timerDisplayTop.textContent = timeLeft;
+    timerDisplayBottom.textContent = timeLeft;
+    document.getElementById("timer-top").classList.remove("blink");
+    document.getElementById("timer-bottom").classList.remove("blink");
     timer = setInterval(() => {
         timeLeft--;
-        timerDisplay.textContent = timeLeft;
+        timerDisplayTop.textContent = timeLeft;
+        timerDisplayBottom.textContent = timeLeft;
         if (timeLeft <= 10) {
-            timerDisplay.classList.add("blink");
+            document.getElementById("timer-top").classList.add("blink");
+            document.getElementById("timer-bottom").classList.add("blink");
         }
         if (timeLeft === 0) {
             clearInterval(timer);
@@ -81,6 +90,9 @@ function makeRandomMove() {
         if (checkWin()) {
             alert(`Giocatore ${currentPlayer} ha vinto!`);
             resetGame();
+        } else if (checkDraw()) {
+            displayDrawMessage();
+            setTimeout(resetGame, 5000);
         } else {
             switchPlayer();
             startTimer();
@@ -89,8 +101,61 @@ function makeRandomMove() {
 }
 
 function checkWin() {
-    // Controlla se ci sono 4 simboli uguali allineati (orizzontale, verticale o diagonale)
-    return false; // Implementa la logica di controllo della vittoria
+    const directions = [
+        { x: 1, y: 0 }, // Orizzontale
+        { x: 0, y: 1 }, // Verticale
+        { x: 1, y: 1 }, // Diagonale crescente
+        { x: 1, y: -1 } // Diagonale decrescente
+    ];
+
+    for (let row = 0; row < numRows; row++) {
+        for (let col = 0; col < numCols; col++) {
+            if (board[row][col] !== null) {
+                for (let direction of directions) {
+                    const winningCells = [{ row, col }];
+                    for (let i = 1; i < 4; i++) {
+                        const newRow = row + i * direction.y;
+                        const newCol = col + i * direction.x;
+                        if (newRow >= 0 && newRow < numRows && newCol >= 0 && newCol < numCols && board[newRow][newCol] === board[row][col]) {
+                            winningCells.push({ row: newRow, col: newCol });
+                        } else {
+                            break;
+                        }
+                    }
+                    if (winningCells.length === 4) {
+                        highlightWinningCells(winningCells);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+function checkDraw() {
+    return board.every(row => row.every(cell => cell !== null));
+}
+
+function displayDrawMessage() {
+    drawMessage.classList.remove("hidden");
+    drawMessage.classList.add("blink");
+    setTimeout(() => {
+        drawMessage.classList.add("hidden");
+    }, 5000); // La scritta "PAREGGIO" lampeggia per 5 secondi
+}
+
+function highlightWinningCells(cells) {
+    cells.forEach(cell => {
+        let cellElement = document.querySelector(`.cell[data-row='${cell.row}'][data-col='${cell.col}']`);
+        cellElement.classList.add("winning-cell");
+    });
+    setTimeout(() => {
+        cells.forEach(cell => {
+            let cellElement = document.querySelector(`.cell[data-row='${cell.row}'][data-col='${cell.col}']`);
+            cellElement.classList.remove("winning-cell");
+        });
+    }, 3000); // Le celle vincenti lampeggiano per 3 secondi
 }
 
 function resetGame() {
