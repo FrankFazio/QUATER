@@ -10,83 +10,35 @@ h1 {
     color: #333;
 }
 
-#game-board {
-    display: grid;
-    grid-template-columns: repeat(5, 60px);
-    grid-template-rows: repeat(12, 60px);
-    gap: 5px;
-    margin-top: 20px;
-}
-
-.cell {
-    width: 60px;
-    height: 60px;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+#game-message {
     font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
+    margin: 20px;
 }
 
-#player-turn, #timer-top, #timer-bottom {
-    margin-top: 20px;
-    font-size: 18px;
-}
-
-#timer-top.blink, #timer-bottom.blink {
+#error-message {
     color: red;
-    animation: blink 1s step-start 0s infinite;
+    font-weight: bold;
+    display: none; /* Nascondi il messaggio di errore inizialmente */
 }
 
 #draw-message {
-    font-size: 24px;
+    color: blue;
     font-weight: bold;
-    color: red;
-    animation: blink 1s step-start 5;
-    margin-top: 20px;
+    font-size: 24px;
+    display: none; /* Nascondi il messaggio di pareggio inizialmente */
 }
 
-.winning-cell {
-    animation: blink 0.5s step-start 6;
+#start-game-button, #new-game-button {
+    background-color: #4CAF50; /* Verde */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 18px;
+    cursor: pointer;
+    margin-top: 10px;
 }
 
-@keyframes blink {
-    50% {
-        opacity: 0;
-    }
+#start-game-button:hover, #new-game-button:hover {
+    background-color: #45a049; /* Verde scuro al passaggio del mouse */
 }
-
-.hidden {
-    display: none;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

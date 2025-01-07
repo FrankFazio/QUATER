@@ -1,24 +1,503 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Q U A T E R</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin: 10px 0;
+            font-size: 36px;
+            text-align: center;
+            color: #333;
+        }
+
+        #setup-screen, #game-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        #setup-screen.active, #game-screen.active {
+            display: flex;
+        }
+
+        #setup-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .form-field {
+            margin: 10px 0;
+        }
+
+        label {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 200px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #error-message {
+            color: red;
+            font-size: 16px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 60px);
+            grid-gap: 5px;
+            margin: 20px 0;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            text-align: center;
+            line-height: 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #ddd;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.3s ease;
+        }
+
+        .cell:hover {
+            background-color: #cfcfcf;
+        }
+
+        #winner-message {
+            font-size: 50px;
+            color: green;
+            display: none;
+            text-align: center;
+            position: fixed;
+            top: 40%; /* Posizione per non sovrapporsi al pulsante */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #draw-message {
+            font-size: 50px;
+            color: red;
+            text-align: center;
+            position: fixed;
+            top: 40%; /* Posizione per non sovrapporsi al pulsante */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: none;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #player-info {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #keyboard {
+            display: grid;
+            grid-template-columns: repeat(4, 40px);
+            grid-gap: 5px;
+            margin: 20px 0;
+        }
+
+        .key {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            text-align: center;
+            line-height: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            background-color: #f4f4f9;
+            cursor: pointer;
+        }
+
+        .key:hover {
+            background-color: #cfcfcf;
+        }
+
+        #timer {
+            font-size: 2em;
+            margin-left: 10px;
+        }
+
+        /* Stile per il pulsante di nuova partita */
+        #new-game {
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            position: absolute; /* Posizione assoluta per sovrapporre alla griglia */
+            top: 50%; /* Posizionamento verticale */
+            left: 50%;
+            transform: translate(-50%, -50%); /* Centrato */
+            z-index: 20; /* Assicurati che sia sopra la griglia */
+            display: none; /* Inizialmente nascosto */
+        }
+
+        #new-game:hover {
+            background-color: #218838;
+        }
+    </style>
 </head>
 <body>
-    <h1>Q U A T E R</h1>
-    <div id="timer-top">Tempo rimanente: <span id="time-left-top">60</span> secondi</div>
-    <div id="game-board"></div>
-    <div id="player-turn">Turno del giocatore: <span id="current-player">1</span></div>
-    <div id="timer-bottom">Tempo rimanente: <span id="time-left-bottom">60</span> secondi</div>
-    <div id="draw-message" class="hidden">PAREGGIO</div>
-    <script src="script.js"></script>
+    <header>
+        <h1>Q U A T E R</h1>
+    </header>
+
+    <!-- Schermata di configurazione -->
+    <div id="setup-screen" class="active">
+        <form id="setup-form">
+            <div id="player-count-label">Numero giocatori?</div>
+            <div id="keyboard"></div>
+            <div id="player-symbols"></div>
+            <div id="error-message">Errore: Controlla i tuoi input!</div>
+            <button type="button" id="start-game">Avvia Gioco</button>
+        </form>
+    </div>
+
+    <!-- Schermata di gioco -->
+    <div id="game-screen">
+        <div id="controls">
+            <div id="player-info">Turno di: <span id="current-player-symbol"></span><span id="timer"></span></div>
+        </div>
+        <div id="game-board"></div>
+        <div id="winner-message"></div>
+        <div id="draw-message">PAREGGIO!</div>
+        <button type="button" id="new-game">Clicca qui per una nuova partita</button>
+    </div>
+
+    <!-- Aggiunta dei suoni -->
+    <audio id="move-sound" src="move-sound.mp3" preload="auto"></audio>
+    <audio id="win-sound" src="win-sound.mp3" preload="auto"></audio>
+
+    <script>
+        const setupScreen = document.getElementById("setup-screen");
+        const gameScreen = document.getElementById("game-screen");
+        const keyboard = document.getElementById("keyboard");
+        const playerSymbolsDiv = document.getElementById("player-symbols");
+        const startGameButton = document.getElementById("start-game");
+        const errorMessage = document.getElementById("error-message");
+        const gameBoard = document.getElementById("game-board");
+        const playerInfo = document.getElementById("player-info");
+        const currentPlayerSymbol = document.getElementById("current-player-symbol");
+        const winnerMessage = document.getElementById("winner-message");
+        const drawMessage = document.getElementById("draw-message");
+        const newGameButton = document.getElementById("new-game");
+        const timerDisplay = document.getElementById('timer');
+
+        const moveSound = document.getElementById("move-sound");
+        const winSound = document.getElementById("win-sound");
+
+        let players = [];
+        let usedSymbols = [];
+        let gameState;
+        let currentPlayer = 0;
+        let playerCount = 0;
+        let timeLeft = 15; // Tempo iniziale
+        let timerInterval;
+
+        // Crea la tastiera
+        for (let i = 0; i < 2; i++) {
+            for (let j = 0; j < 4; j++) {
+                const key = document.createElement("div");
+                key.classList.add("key");
+                key.textContent = (i * 4) + j + 2;
+                key.addEventListener("click", () => {
+                    playerCount = (i * 4) + j + 2;
+                    playerSymbolsDiv.innerHTML = "";
+                    usedSymbols = [];
+                    for (let k = 0; k < playerCount; k++) {
+                        const div = document.createElement("div");
+                        div.classList.add("form-field");
+                        div.innerHTML = `
+                            <label for="player-symbol-${k}">Lettera scelta dal ${k === 0 ? 'primo' : k === 1 ? 'secondo' : k === 2 ? 'terzo' : k + 1 + '°'} giocatore:</label>
+                            <input type="text" id="player-symbol-${k}" maxlength="1" required>
+                        `;
+                        playerSymbolsDiv.appendChild(div);
+                    }
+                });
+                keyboard.appendChild(key);
+            }
+        }
+
+        startGameButton.addEventListener("click", () => {
+            if (playerCount < 2) {
+                showError("Devi selezionare almeno 2 giocatori.");
+                return;
+            }
+
+            players = [];
+            usedSymbols = [];
+            for (let i = 0; i < playerCount; i++) {
+                const symbolInput = document.getElementById(`player-symbol-${i}`);
+                const symbol = symbolInput.value.toUpperCase();
+                if (!symbol || symbol.length !== 1 || usedSymbols.includes(symbol)) {
+                    showError("Ogni giocatore deve scegliere una lettera unica e valida.");
+                    return;
+                }
+                usedSymbols.push(symbol);
+                players.push({ symbol, color: getPlayerColor(i) });
+            }
+
+            setupScreen.classList.remove("active");
+            gameScreen.classList.add("active");
+            startGame();
+        });
+
+        newGameButton.addEventListener("click", () => {
+            setupScreen.classList.add("active");
+            gameScreen.classList.remove("active");
+            newGameButton.style.display = "none";
+            winnerMessage.style.display = "none";
+            drawMessage.style.display = "none";
+            playerCount = 0;
+            players = [];
+            usedSymbols = [];
+            gameState = null;
+            currentPlayer = 0;
+            clearInterval(timerInterval); // Ferma il timer
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = "block";
+            setTimeout(() => {
+                errorMessage.style.display = "none";
+            }, 3000);
+        }
+
+        function startGame() {
+            gameState = Array.from({ length: 7 }, () => Array(5).fill(null)); // 7 righe e 5 colonne
+            currentPlayer = 0;
+            createBoard();
+            updatePlayerInfo();
+            startTimer(); // Avvia il timer
+        }
+
+        function createBoard() {
+            gameBoard.innerHTML = "";
+            for (let row = 0; row < 7; row++) { // 7 righe
+                for (let col = 0; col < 5; col++) { // 5 colonne
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener("click", () => handleCellClick(row, col));
+                    gameBoard.appendChild(cell);
+                }
+            }
+        }
+
+function handleCellClick(row, col) {
+            if (gameState[row][col] === null) {
+                gameState[row][col] = currentPlayer;
+                const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                cell.style.backgroundColor = players[currentPlayer].color;
+                cell.textContent = players[currentPlayer].symbol;
+                flashSymbol(cell); // Lampeggia il simbolo
+
+                moveSound.currentTime = 0; // Riavvia il suono
+                moveSound.play(); // Riproduci il suono del movimento
+
+                if (checkWin(row, col)) {
+                    winSound.currentTime = 0; // Riavvia il suono
+                    winSound.play(); // Riproduci il suono di vittoria
+                    winnerMessage.textContent = `Il giocatore ${players[currentPlayer].symbol} ha vinto!`;
+                    winnerMessage.style.display = "block";
+                    newGameButton.style.display = "block";
+                    clearInterval(timerInterval); // Ferma il timer
+                } else if (checkDraw()) {
+                    drawMessage.style.display = "block";
+                    newGameButton.style.display = "block";
+                    clearInterval(timerInterval); // Ferma il timer
+                } else {
+                    currentPlayer = (currentPlayer + 1) % players.length;
+                    updatePlayerInfo();
+                    resetTimer(); // Ripristina il timer per il nuovo giocatore
+                }
+            }
+        }
+
+        function updatePlayerInfo() {
+            currentPlayerSymbol.innerHTML = `<span style="color:${players[currentPlayer].color}">${players[currentPlayer].symbol}</span>`;
+        }
+
+        function checkWin(row, col) {
+            const directions = [
+                { dr: 0, dc: 1 }, // Orizzontale
+                { dr: 1, dc: 0 }, // Verticale
+                { dr: 1, dc: 1 }, // Diagonale crescente
+                { dr: 1, dc: -1 } // Diagonale decrescente
+            ];
+
+            for (const { dr, dc } of directions) {
+                let count = 1;
+                for (let i = -3; i <= 3; i++) {
+                    if (i !== 0 && checkCell(row + i * dr, col + i * dc)) {
+                        count++;
+                        if (count >= 4) return true;
+                    } else {
+                        count = 1;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function checkCell(row, col) {
+            return (
+                row >= 0 &&
+                row < 7 && // Modificato per 7 righe
+                col >= 0 &&
+                col < 5 &&
+                gameState[row][col] === currentPlayer
+            );
+        }
+
+        function checkDraw() {
+            return gameState.flat().every(cell => cell !== null);
+        }
+
+        function getPlayerColor(index) {
+            const colors = ["red", "blue", "green", "purple", "orange", "cyan"];
+            return colors[index % colors.length];
+        }
+
+        // Funzione per avviare il countdown
+        function startTimer() {
+            timeLeft = 15; // Reset del timer
+            timerDisplay.textContent = timeLeft; // Mostra il tempo iniziale
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    if (gameState.flat().every(cell => cell !== null)) return; // Se il gioco è finito
+                    chooseRandomCell(); // Scegli una cella casuale
+                }
+            }, 1000);
+        }
+
+        // Funzione per ripristinare il timer
+        function resetTimer() {
+            clearInterval(timerInterval);
+            startTimer(); // Riavvia il timer per il nuovo turno
+        }
+
+        // Funzione per scegliere una cella casuale
+        function chooseRandomCell() {
+            const emptyCells = Array.from(document.querySelectorAll('.cell')).filter(cell => cell.textContent === '');
+            if (emptyCells.length > 0) {
+                const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                const row = randomCell.dataset.row;
+                const col = randomCell.dataset.col;
+                gameState[row][col] = currentPlayer; // Aggiorna lo stato del gioco
+                randomCell.style.backgroundColor = players[currentPlayer].color;
+                randomCell.textContent = players[currentPlayer].symbol;
+                flashSymbol(randomCell); // Lampeggia il simbolo
+
+                moveSound.currentTime = 0; // Riavvia il suono
+                moveSound.play(); // Riproduci il suono del movimento
+
+                if (checkWin(row, col)) {
+                    winSound.currentTime = 0; // Riavvia il suono
+                    winSound.play(); // Riproduci il suono di vittoria
+                    winnerMessage.textContent = `Il giocatore ${players[currentPlayer].symbol} ha vinto!`;
+                    winnerMessage.style.display = "block";
+                    newGameButton.style.display = "block";
+                } else if (checkDraw()) {
+                    drawMessage.style.display = "block";
+                    newGameButton.style.display = "block";
+                } else {
+                    currentPlayer = (currentPlayer + 1) % players.length;
+                    updatePlayerInfo();
+                    resetTimer(); // Ripristina il timer per il nuovo giocatore
+                }
+            }
+        }
+
+        // Funzione per far lampeggiare il simbolo
+        function flashSymbol(cell) {
+            const originalColor = cell.style.backgroundColor;
+            let flashCount = 0;
+            const flashInterval = setInterval(() => {
+                cell.style.backgroundColor = flashCount % 2 === 0 ? originalColor : 'yellow'; // Cambia colore per il lampeggio
+                flashCount++;
+                if (flashCount === 6) { // Lampeggia per 3 secondi (6 cambiamenti)
+                    clearInterval(flashInterval);
+                    cell.style.backgroundColor = originalColor; // Ripristina il colore originale
+                }
+            }, 500);
+        }
+    </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
 
 
 
